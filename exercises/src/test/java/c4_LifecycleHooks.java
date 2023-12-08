@@ -37,6 +37,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     CopyOnWriteArrayList<String> hooksTriggered = new CopyOnWriteArrayList<>();
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doOnSubscribe(subscription -> hooksTriggered.add("subscribe"))
         //todo: change this line only
         ;
 
@@ -44,7 +45,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
         .expectNextCount(5)
         .verifyComplete();
 
-    Assertions.assertEquals(hooksTriggered, List.of("subscribe"));
+    Assertions.assertEquals(List.of("subscribe"), hooksTriggered);
   }
 
   /**
@@ -56,6 +57,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     CopyOnWriteArrayList<String> hooksTriggered = new CopyOnWriteArrayList<>();
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doFirst(() -> hooksTriggered.add("before subscribe"))
         //todo: change this line only
         ;
 
@@ -75,6 +77,10 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     AtomicInteger counter = new AtomicInteger(0);
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doOnNext(i -> {
+          System.out.println(i);
+          counter.incrementAndGet();
+        })
         //todo: change this line only
         ;
 
@@ -82,7 +88,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
         .expectNextCount(20)
         .verifyComplete();
 
-    Assertions.assertEquals(counter.get(), 20);
+    Assertions.assertEquals(20, counter.get());
   }
 
   /**
@@ -94,6 +100,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     AtomicBoolean completed = new AtomicBoolean(false);
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doOnComplete(() -> completed.set(true))
         //todo: change this line only
         ;
 
@@ -113,8 +120,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     AtomicBoolean canceled = new AtomicBoolean(false);
 
     Flux<Integer> temperatureFlux = room_temperature_service()
-        //todo: change this line only
-        ;
+        .doOnCancel(() -> canceled.set(true));
 
     StepVerifier.create(temperatureFlux.take(0))
         .expectNextCount(0)
@@ -132,6 +138,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     AtomicInteger hooksTriggeredCounter = new AtomicInteger(0);
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doOnTerminate(hooksTriggeredCounter::incrementAndGet)
         //todo: change this line only
         ;
 
@@ -161,6 +168,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     AtomicInteger hooksTriggeredCounter = new AtomicInteger(0);
 
     Flux<Integer> temperatureFlux = room_temperature_service()
+        .doFinally(signalType -> hooksTriggeredCounter.incrementAndGet())
         //todo: change this line only
         ;
 
@@ -177,7 +185,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
         .expectError()
         .verify();
 
-    Assertions.assertEquals(hooksTriggeredCounter.get(), 3);
+    Assertions.assertEquals(3, hooksTriggeredCounter.get());
   }
 
   /**
@@ -194,13 +202,13 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
         .doFirst(() -> sideEffects.add("one"));
 
     List<String> orderOfExecution =
-        Arrays.asList("todo", "todo", "todo"); //todo: change this line only
+        Arrays.asList("one", "two", "three"); //todo: change this line only
 
     StepVerifier.create(just)
         .expectNext(true)
         .verifyComplete();
 
-    Assertions.assertEquals(sideEffects, orderOfExecution);
+    Assertions.assertEquals(orderOfExecution, sideEffects);
   }
 
   /**
@@ -208,8 +216,8 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
    * behavior (side-effects) triggered for each signal that happens on Flux. It also has access to
    * the context, which might be useful later.
    * <p>
-   * In this exercise, Flux will emit three elements and then complete. Add signal names to `signal`
-   * list dynamically, once these signals occur.
+   * In this exercise, Flux will emit three elements and then complete. Add signal names to
+   * `signals` list dynamically, once these signals occur.
    * <p>
    * Bonus: Explore this operator's documentation, as it may be useful in the future.
    */
@@ -218,6 +226,7 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
     CopyOnWriteArrayList<String> signals = new CopyOnWriteArrayList<>();
 
     Flux<Integer> flux = Flux.just(1, 2, 3)
+        .doOnEach(signalType -> signals.add(signalType.getType().name()))
         //todo: change this line only
         ;
 
@@ -225,6 +234,6 @@ public class c4_LifecycleHooks extends LifecycleHooksBase {
         .expectNextCount(3)
         .verifyComplete();
 
-    Assertions.assertEquals(signals, Arrays.asList("ON_NEXT", "ON_NEXT", "ON_NEXT", "ON_COMPLETE"));
+    Assertions.assertEquals(Arrays.asList("ON_NEXT", "ON_NEXT", "ON_NEXT", "ON_COMPLETE"), signals);
   }
 }
